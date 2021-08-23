@@ -1,0 +1,9 @@
+name: webrtc_audio
+version: 0.1.0
+
+authors:
+  - Sal Scotto <sal.scotto@gmail.com>
+
+crystal: 0.36.0
+
+license: MIT
