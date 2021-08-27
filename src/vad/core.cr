@@ -279,60 +279,49 @@ module WebrtcAudio
           # Update |sum_log_likelihood_ratios| with spectrum weighting. This is
           # used for the global VAD decision.
           sum_log_likelihood_ratios += (log_likelihood_ratio * kSpectrumWeight()[channel]).to_i32!
-          puts "Sum ratio #{sum_log_likelihood_ratios}"
           # Local VAD decision.
           if ((log_likelihood_ratio * 4) > individualTest)
             vadflag = 1
           end
-          puts "Local vad #{vadflag}"
           # TODO(bjornv): The conditional probabilities below are applied on the
           # hard coded number of Gaussians set to two. Find a way to generalize.
           # Calculate local noise probabilities used later when updating the GMM.
           h0 = (h0_test >> 12).to_i16! # Q15
-          puts("Q15 #{h0}")
           if (h0 > 0)
             # High probability of noise. Assign conditional probabilities for each
             # Gaussian in the GMM.
             tmp1_s32 = (noise_probability[0] & 0xFFFFF000) << 2                                # Q29
             ngprvec[channel] = WebrtcAudio::SignalProcessing.div_w32_w16(tmp1_s32, h0).to_i16! # Q14
             ngprvec[channel + WebrtcAudio.kNumChannels] = (16384 - ngprvec[channel]).to_i16!
-            puts "HV1 #{ngprvec[channel]} #{ngprvec[channel + WebrtcAudio.kNumChannels]}"
           else
             # Low noise probability. Assign conditional probability 1 to the first
             # Gaussian and 0 to the rest (which is already set at initialization).
             ngprvec[channel] = 16384_i16
-            puts "HV 2"
           end
           # Calculate local speech probabilities used later when updating the GMM.
           h1 = (h1_test >> 12).to_i16! # Q15
-          puts "Q15b #{h1}"
           if (h1 > 0)
             # High probability of speech. Assign conditional probabilities for each
             # Gaussian in the GMM. Otherwise use the initialized values, i.e., 0.
             tmp1_s32 = (speech_probability[0] & 0xFFFFF000) << 2                               # Q29
             sgprvec[channel] = WebrtcAudio::SignalProcessing.div_w32_w16(tmp1_s32, h1).to_i16! # Q14
             sgprvec[channel + WebrtcAudio.kNumChannels] = (16384 - sgprvec[channel]).to_i16!
-            puts "HV1a #{sgprvec[channel]} #{sgprvec[channel + WebrtcAudio.kNumChannels]}"
           end
         }
 
         # Make a global VAD decision.
         vadflag = (vadflag.to_i32 | ((sum_log_likelihood_ratios >= totalTest) ? 1 : 0)).to_i32!
-        puts "VAD Flag XOR #{vadflag}"
         # Update the model parameters.
         maxspe = 12800
         (0...WebrtcAudio.kNumChannels).each { |channel|
           # Get minimum value in past which is used for long term correction in Q4.
           feature_minimum = self.find_minimum(inst, features[channel], channel)
-
           # Compute the "global" mean, that is the sum of the two means weighted.
           # noice means to slice
           means_slice = Slice(Int16).new(inst.noise_means.to_unsafe, inst.noise_means.size)
           sArray = kNoiseDataWeights()[channel, 12]
           noise_global_mean = self.weighted_average(means_slice + channel, 0, sArray)
-          puts "Q*: Noise mean #{noise_global_mean}"
           tmp1_s16 = (noise_global_mean >> 6).to_i16! # Q8
-
           (0...WebrtcAudio.kNumGaussians).each { |k|
             gaussian = channel + k * WebrtcAudio.kNumChannels
 
