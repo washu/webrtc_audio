@@ -53,19 +53,16 @@ module WebrtcAudio
         tmp32 = (kHpZeroCoefs()[0].to_i32 &* data_in[inPtr].to_i32).to_i32!
         tmp32 = (tmp32.to_i32 + kHpZeroCoefs()[1].to_i32 * filter_state[0].to_i32).to_i32
         tmp32 = (tmp32.to_i32 + kHpZeroCoefs()[2].to_i32 * filter_state[1].to_i32).to_i32
-        # puts "HP #{i} A #{tmp32}"
         filter_state[1] = filter_state[0]
         filter_state[0] = data_in[inPtr]
         inPtr += 1
         # All-pole section (filter coefficients in Q14).
         tmp32 = (tmp32.to_i32 - kHpPoleCoefs()[1].to_i32 &* filter_state[2].to_i32).to_i32!
         tmp32 = (tmp32.to_i32 - kHpPoleCoefs()[2].to_i32 &* filter_state[3].to_i32).to_i32!
-        # puts "HP #{i} B #{tmp32}"
 
         filter_state[3] = filter_state[2]
         filter_state[2] = (tmp32.to_i32 >> 14).to_i16!
         data_out[outPtr] = filter_state[2]
-        # puts "HP #{i} final #{filter_state[2]}"
         outPtr += 1
       }
     end
@@ -90,23 +87,16 @@ module WebrtcAudio
       inPtr = 0
       outPtr = 0
       state32 = ((filter_state.value.to_i32!) * (1 << 16)).to_i32! # Q15
-      # puts "State 32 PRE #{state32} #{filter_state.value} #{data_length}"
       (0...data_length).each { |i|
-        # puts "Checking pre filter state of #{state32} input: #{filter_state.value} din: #{data_in[inPtr]} coef #{filter_coefficient}"
         tmp32 = (state32.to_i32! &+ (filter_coefficient.to_i32! &* (data_in[inPtr]).to_i32!)).to_i32!
-        # puts "temp 32 #{tmp32}"
         tmp16 = (tmp32.to_i32 >> 16).to_i16! # Q(-1)
-        # puts "tmp 16 #{tmp16}"
         data_out[outPtr] = tmp16
         outPtr += 1
         state32 = ((data_in[inPtr].to_i32! &* (1 << 14)) &- filter_coefficient.to_i32 &* tmp16.to_i32).to_i32! # Q14
-        # puts "State 32#2 #{state32}"
         state32 = (state32 &* 2).to_i32! # Q15.
-        # puts "State 32#3 #{state32}"
         inPtr += 2
       }
       filter_state.value = (state32.to_i32 >> 16).to_i16! # Q(-1)
-      # puts "State 32 POST #{state32} #{filter_state.value} #{(state32.to_i64 >> 16)}"
     end
 
     # Splits |data_in| into |hp_data_out| and |lp_data_out| corresponding to
@@ -127,22 +117,17 @@ module WebrtcAudio
       # All-pass filtering upper branch.
       hp_data_out_slice = Slice(Int16).new(hp_data_out.to_unsafe, hp_data_out.size)
       lp_data_out_slice = Slice(Int16).new(lp_data_out.to_unsafe, lp_data_out.size)
-      # puts "PRE Split upper/lower is #{upper_state.value} #{lower_state.value}"
       self.all_pass_filter(data_in, half_length, kAllPassCoefsQ15()[0], upper_state, hp_data_out_slice)
       # All-pass filtering lower branch.
       self.all_pass_filter(data_in + 1, half_length, kAllPassCoefsQ15()[1], lower_state, lp_data_out_slice)
-      # puts "Post Split upper/lower is #{upper_state.value} #{lower_state.value}"
       houtPtr = 0
       loutPtr = 0
       # Make LP and HP signals.
       (0...half_length).each { |i|
         tmp_out = hp_data_out[houtPtr]
-        # puts "Split filter: a #{i} #{tmp_out}"
         hp_data_out[houtPtr] = (hp_data_out[houtPtr] &- lp_data_out[loutPtr]).to_i16!
-        # puts "Split filter: b #{i} #{hp_data_out[houtPtr]} #{lp_data_out[loutPtr]}"
         houtPtr += 1
         lp_data_out[loutPtr] = (lp_data_out[loutPtr] &+ tmp_out).to_i16!
-        # puts "Split filter c: #{i} #{lp_data_out[loutPtr]}"
         loutPtr += 1
       }
     end
@@ -167,13 +152,10 @@ module WebrtcAudio
       rc = WebrtcAudio::SignalProcessing.energy(data_in, data_length)
       energy = rc[0]
       tot_rshifts = rc[1]
-      # puts "Log Energy 1: #{energy},#{tot_rshifts}"
 
       if (energy != 0)
         # By construction, normalizing to 15 bits is equivalent with 17 leading
         # zeros of an unsigned 32 bit value.
-        puts "Energy #{energy} B #{WebrtcAudio.norm_w32(energy)} #{17 - energy.leading_zeros_count}"
-        puts "next check"
         normalizing_rshifts = (17 - (energy == 0 ? 32 : energy.leading_zeros_count))
         # In a 15 bit representation the leading bit is 2^14. log2(2^14) in Q10 is
         # (14 << 10), which is what we initialize |log2_energy| with. For a more
@@ -189,7 +171,6 @@ module WebrtcAudio
         else
           energy = (energy >> normalizing_rshifts).to_i32!
         end
-        # puts "Log 2: #{energy} normed #{normalizing_rshifts}"
         # Calculate the energy of |data_in| in dB, in Q4.
         #
         # 10 * log10("true energy") in Q4 = 2^4 * 10 * log10("true energy") =
@@ -211,28 +192,21 @@ module WebrtcAudio
         # Note that frac_Q15 = (|energy| & 0x00003FFF)
         # Calculate and add the fractional part to |log2_energy|.
         log2_energy += ((energy & 0x00003FFF) >> 4).to_i16
-        # puts "Log 3: #{log2_energy}"
         # |kLogConst| is in Q9, |log2_energy| in Q10 and |tot_rshifts| in Q0.
         # Note that we in our derivation above have accounted for an output in Q4.
         ax = (((kLogConst().to_i32 * log2_energy)) >> 19).to_i32
         bx = (((tot_rshifts.to_i32 * kLogConst())) >> 9).to_i32
-        # puts "AX #{ax} to #{bx}"
         fx = (ax + bx).to_i16!
         log_energy_t = fx
-        # puts "Log 4: #{log_energy_t}"
         log_energy[log_energy_index] = fx
         if (log_energy[log_energy_index] < 0)
           log_energy[log_energy_index] = 0
         end
-        # puts "LE:#{log_energy[log_energy_index]}"
       else
-        # puts "TX exist"
         log_energy[log_energy_index] = offset
         return
       end
-      # puts "Pre ofset #{log_energy[log_energy_index]}"
       log_energy[log_energy_index] += offset
-      # puts "Post ofset #{log_energy[log_energy_index]} #{offset}"
       # Update the approximate |total_energy| with the energy of |data_in|, if
       # |total_energy| has not exceeded |kMinEnergy|. |total_energy| is used as an
       # energy indicator in WebRtcVad_GmmProbability() in vad_core.c.
@@ -241,14 +215,12 @@ module WebrtcAudio
           # We know by construction that the |energy| > |kMinEnergy| in Q0, so add
           # an arbitrary value such that |total_energy| exceeds |kMinEnergy|.
           total_energy.value = total_energy.value + WebrtcAudio.kMinEnergy + 1
-          # puts "A : #{total_energy.value}"
         else
           # By construction |energy| is represented by 15 bits, hence any number of
           # right shifted |energy| will fit in an int16_t. In addition, adding the
           # value to |total_energy| is wrap around safe as long as
           # |kMinEnergy| < 8192.
           total_energy.value = total_energy.value + (energy.to_i32 >> -tot_rshifts.to_i32).to_i16! # Q0.
-          # puts "B #{total_energy.value}"
         end
       end
     end
@@ -282,12 +254,10 @@ module WebrtcAudio
       lower_freq = inst.lower_state[frequency_band]
       lower_pointer = pointerof(lower_freq)
       energy_pointer = pointerof(total_energy)
-      # puts "Upper Pointer PRE #{upper_pointer.value} #{lower_pointer.value}\n***\n"
       self.split_filter(data_in, data_length, upper_pointer, lower_pointer, hp_120, lp_120)
       inst.upper_state[frequency_band] = upper_pointer.value
       inst.lower_state[frequency_band] = lower_pointer.value
 
-      # puts "Upper Pointer POST #{upper_pointer.value} #{lower_pointer.value}\n**#{inst.upper_state[frequency_band]}:#{inst.lower_state[frequency_band]}\n"
       # For the upper band (2000 Hz - 4000 Hz) split at 3000 Hz and downsample.
       frequency_band = 1
       upper_freq = inst.upper_state[frequency_band]
@@ -301,10 +271,8 @@ module WebrtcAudio
       # Energy in 3000 Hz - 4000 Hz.
       length /= 2 # |data_length| / 4 <=> bandwidth = 1000 Hz.
 
-      # puts "Pre log #{total_energy} #{features[5]} Lenth #{length}"
 
       self.log_of_energy(hp_60_slice, length.round.to_i32, kOffsetVector()[5], energy_pointer, features, 5)
-      # puts "Post log #{total_energy} FV: #{features[5]}"
       # Energy in 2000 Hz - 3000 Hz.
       self.log_of_energy(lp_60_slice, length.round.to_i32, kOffsetVector()[4], energy_pointer, features, 4)
       # For the lower band (0 Hz - 2000 Hz) split at 1000 Hz and downsample.
@@ -356,7 +324,6 @@ module WebrtcAudio
       self.high_pass_filter(lp_60_slice, length.round.to_i32, m, hp_120_slice)
       # Energy in 80 Hz - 250 Hz.
       self.log_of_energy(hp_120_slice, length.round.to_i32, kOffsetVector()[0], energy_pointer, features, 0)
-      puts "Calc featur total energy #{total_energy}"
       return total_energy
     end
   end

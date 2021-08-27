@@ -22,16 +22,12 @@ module WebrtcAudio
       half_length = (in_length >> 1)
       inPtr = 0
       outPtr = 0
-      # puts("\n****Start Downsampling 1: #{tmp32_1} 2:#{tmp32_2} lt:#{half_length} hl: #{in_length}",tmp32_1,tmp32_2,half_length,in_length)
       # Filter coefficients in Q13, filter state in Q0.
       (0...half_length).each { |n|
         # All-pass filtering upper branch.
-        # puts("#{(tmp32_1 >> 1)} + #{((kAllPassCoefsQ13()[0].to_i32 * signal_in[inPtr].to_i32!) >> 14).to_i32 }")
         tmp16_1 = ((tmp32_1 >> 1) &+ ((kAllPassCoefsQ13()[0].to_i32! &* signal_in[inPtr].to_i32!) >> 14)).to_i16!
         signal_out[outPtr] = tmp16_1
-        # puts("pre-in #{tmp16_1}")
         tmp32_1 = (signal_in[inPtr]) &- ((kAllPassCoefsQ13()[0].to_i32! &* tmp16_1.to_i32!) >> 12).to_i32!
-        # puts("Downsample: Temp32_1 #{tmp32_1} Tmp16_1 #{tmp16_1} out:#{signal_out[outPtr]} post in #{signal_in[inPtr+1]}")
 
         inPtr += 1
         # All-pass filtering lower branch.
@@ -40,7 +36,6 @@ module WebrtcAudio
         outPtr += 1
         tmp32_2 = (signal_in[inPtr]) &- ((kAllPassCoefsQ13[1].to_i32! &* tmp16_2.to_i32!) >> 12).to_i32!
         inPtr += 1
-        # puts("Downsample: Temp32_2 #{tmp32_2} Tmp16_2 #{tmp16_2} row\n",tmp32_2,tmp16_2);
       }
       # Store the filter states.
       filter_state[0] = tmp32_1.to_i32!

@@ -338,28 +338,22 @@ module WebrtcAudio
               # (Q14 * Q11 >> 11) = Q14.
               delt = ((ngprvec[gaussian] &* deltaN[gaussian]) >> 11).to_i16!
               # Q7 + (Q14 * Q15 >> 22) = Q7.
-              puts "Q7 + (Q14 * Q15 >> 22) = Q7 (#{nmk} + (#{delt} * #{kNoiseUpdateConst}) >> 22)"
               nmk2 = (nmk.to_i32 + ((delt.to_i32 &* kNoiseUpdateConst).to_i32 >> 22).to_i16!).to_i16!
             end
-            puts "Noise update #{nmk} #{smk} #{nsk} #{ssk}, #{delt} #{nmk2}"
             # Long term correction of the noise mean.
             # Q8 - Q8 = Q8.
             ndelt = ((feature_minimum.to_i32 << 4).to_i32! - tmp1_s16.to_i32!).to_i16!
             # Q7 + (Q8 * Q8) >> 9 = Q7.
-            puts "#{nmk2} + (#{ndelt} * #{kBackEta}) >> 9 OR #{(ndelt.to_i32 &* kBackEta().to_i32)} or  #{(ndelt.to_i32 &* kBackEta().to_i32) >> 9}"
             nmk3 = (nmk2 + ((ndelt.to_i32 &* kBackEta().to_i32) >> 9).to_i16!)
-            puts "Q8-Q7 #{ndelt} #{nmk3} (fmin: #{feature_minimum.to_i32} kb:#{kBackEta}) ts:#{tmp1_s16}"
             # Control that the noise mean does not drift to much.
             tmp_s16 = ((k &+ 5) << 7).to_i16!
             if (nmk3 < tmp_s16)
               nmk3 = tmp_s16
             end
-            puts "tmp16 drift 1 #{tmp_s16} #{nmk3}"
             tmp_s16 = ((72 &+ k &- channel) << 7).to_i16!
             if (nmk3 > tmp_s16)
               nmk3 = tmp_s16
             end
-            puts "tmp16 drift 2 #{tmp_s16} #{nmk3}"
             inst.noise_means[gaussian] = nmk3
 
             if (vadflag)
@@ -373,7 +367,6 @@ module WebrtcAudio
               tmp_s16 = ((delt.to_i32! &* kSpeechUpdateConst().to_i32!).to_i32! >> 21).to_i16!
               # Q7 + (Q8 >> 1) = Q7. With rounding.
               smk2 = smk + ((tmp_s16.to_i32 &+ 1) >> 1).to_i16!
-              puts "Q14 #{delt} #{tmp_s16} #{smk2} (#{delt &* kSpeechUpdateConst})"
               # Control that the speech mean does not drift to much.
               maxmu = maxspe + 640
               if (smk2 < kMinimumMean()[k])
@@ -382,28 +375,20 @@ module WebrtcAudio
               if (smk2 > maxmu)
                 smk2 = maxmu
               end
-              puts "Pre q7 #{smk2} #{maxmu}"
               inst.speech_means[gaussian] = smk2.to_i16 # Q7.
 
               # (Q7 >> 3) = Q4. With rounding.
               tmp_s16 = ((smk &+ 4) >> 3)
-              puts "Q4 rounding #{tmp_s16}"
 
               tmp_s16 = features[channel] &- tmp_s16 # Q4
-              puts "Q4 end #{tmp_s16} (#{features[channel]})"
               # (Q11 * Q4 >> 3) = Q12.
               tmp1_s32 = ((deltaS[gaussian].to_i32! &* tmp_s16.to_i32!).to_i32! >> 3).to_i32
-              puts "Q12 #{tmp1_s32} (#{deltaS[gaussian]}) #{(deltaS[gaussian].to_i32! &* tmp_s16.to_i32!).to_i32!}"
               tmp2_s32 = (tmp1_s32 &- 4096).to_i32!
-              puts "Q12 end #{tmp2_s32}"
 
               tmp_s16 = (sgprvec[gaussian].to_i32 >> 2).to_i16!
-              puts "Q12 extra #{tmp_s16} (#{sgprvec[gaussian]})"
               # (Q14 >> 2) * Q12 = Q24.
               tmp1_s32 = (tmp_s16.to_i32! &* tmp2_s32.to_i32!).to_i32!
-              puts "Q24 #{tmp1_s32}"
               tmp2_s32 = (tmp1_s32 >> 4).to_i32! # Q20
-              puts "Q20 #{tmp2_s32}"
               # 0.1 * Q20 / Q7 = Q13.
               if (tmp2_s32 > 0)
                 tmp_s16 = WebrtcAudio::SignalProcessing.div_w32_w16(tmp2_s32.to_i32, ssk * 10).to_i16!
@@ -411,7 +396,6 @@ module WebrtcAudio
                 tmp_s16 = WebrtcAudio::SignalProcessing.div_w32_w16(-tmp2_s32.to_i32, ssk * 10).to_i16!
                 tmp_s16 = -tmp_s16
               end
-              puts "Q13 #{tmp_s16}"
               # Divide by 4 giving an update factor of 0.025 (= 0.1 / 4).
               # Note that division by 4 equals shift by 2, hence,
               # (Q13 >> 8) = (Q13 >> 6) / 4 = Q7.
@@ -420,26 +404,21 @@ module WebrtcAudio
               if (ssk < kMinStd)
                 ssk = kMinStd
               end
-              puts "Q7 #{tmp_s16} #{ssk}"
               inst.speech_stds[gaussian] = ssk
             else
               # Update GMM variance vectors.
               # deltaN * (features[channel] - nmk) - 1
               # Q4 - (Q7 >> 3) = Q4.
               tmp_s16 = (features[channel] &- (nmk.to_i32 >> 3)).to_i16!
-              puts "Q4 #{tmp_s16} (#{features[channel]} - #{nmk})"
               # (Q11 * Q4 >> 3) = Q12.
               tmp1_s32 = ((deltaN[gaussian] &* tmp_s16).to_i32 >> 3).to_i32!
               tmp1_s32 = (tmp1_s32 &- 4096).to_i32!
-              puts "Q12 #{tmp1_s32} #{deltaN[gaussian]}"
               # (Q14 >> 2) * Q12 = Q24.
               tmp_s16 = ((ngprvec[gaussian] &+ 2).to_i32 >> 2).to_i16!
               tmp2_s32 = self.overflowing_muls16_by_s32_to_s32(tmp_s16.to_i16!, tmp1_s32.to_i32!)
-              puts "Q24 #{tmp_s16} #{tmp1_s32} :#{tmp2_s32}"
               # Q20  * approx 0.001 (2^-10=0.0009766), hence,
               # (Q24 >> 14) = (Q24 >> 4) / 2^10 = Q20.
               tmp1_s32 = tmp2_s32 >> 14
-              puts "Q20 #{tmp1_s32}"
               # Q20 / Q7 = Q13.
               if (tmp1_s32 > 0)
                 tmp_s16 = WebrtcAudio::SignalProcessing.div_w32_w16(tmp1_s32, nsk).to_i16!
@@ -447,13 +426,11 @@ module WebrtcAudio
                 tmp_s16 = WebrtcAudio::SignalProcessing.div_w32_w16(-tmp1_s32, nsk).to_i16!
                 tmp_s16 = -tmp_s16
               end
-              puts "Q13 #tmp_s16)"
               tmp_s16 += 32       # Rounding
               nsk += tmp_s16 >> 6 # Q13 >> 6 = Q7.
               if (nsk < kMinStd)
                 nsk = kMinStd
               end
-              puts "Q7 #{tmp_s16},#{nsk}"
               inst.noise_stds[gaussian] = nsk
             end
           }
@@ -472,7 +449,6 @@ module WebrtcAudio
           # |diff| = "global" speech mean - "global" noise mean.
           # (Q14 >> 9) - (Q14 >> 9) = Q5.
           diff = ((speech_global_mean >> 9).to_i16! &- (noise_global_mean >> 9).to_i16!).to_i16!
-          puts "Q5 #{diff} #{(speech_global_mean >> 9).to_i16!} - #{(noise_global_mean >> 9).to_i16!}"
           if (diff < kMinimumDifference()[channel])
             tmp_s16 = kMinimumDifference()[channel] - diff
             # |tmp1_s16| = ~0.8 * (kMinimumDifference - diff) in Q7.
@@ -662,7 +638,6 @@ module WebrtcAudio
       feature_vector = Array(Int16).new(WebrtcAudio.kNumChannels, 0)
       # Get power in the bands
       total_power = self.calculate_features(inst, speech_frame, frame_length, feature_vector)
-      puts "calc vad 8khz total power #{total_power}"
       # Make a VAD
       inst.vad = self.gmm_probability(inst, feature_vector, total_power, frame_length)
       return inst.vad.to_i32
