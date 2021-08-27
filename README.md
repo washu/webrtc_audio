@@ -1,6 +1,6 @@
 # webrtc_audio
 
-TODO: Write a description here
+This is a pure crystal port of libvad (https://github.com/dpirch/libfvad)
 
 ## Installation
 
@@ -9,7 +9,7 @@ TODO: Write a description here
    ```yaml
    dependencies:
      webrtc_audio:
-       github: your-github-user/webrtc_audio
+       github: washu/webrtc_audio
    ```
 
 2. Run `shards install`
@@ -36,4 +36,4 @@ TODO: Write development instructions here
 
 ## Contributors
 
-- [Sal Scotto](https://github.com/your-github-user) - creator and maintainer
+- [Sal Scotto](https://github.com/washu) - creator and maintainer
