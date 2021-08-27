@@ -1,5 +1,5 @@
 # webrtc_audio
-[![Build Status](https://app.travis-ci.com/washu/webrtc_audio.svg?branch=main)](https://app.travis-ci.com/washu/webrtc_audio)
+[![Crystal CI](https://github.com/washu/webrtc_audio/actions/workflows/crystal.yml/badge.svg)](https://github.com/washu/webrtc_audio/actions/workflows/crystal.yml)
 This is a pure crystal port of libvad (https://github.com/dpirch/libfvad)
 
 ## Installation
