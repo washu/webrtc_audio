@@ -62,8 +62,8 @@ module WebrtcAudio
 		  j = i
           while j < 15
 		    lidx = offset + j
-			smallest_values[lidx] = smallest_values[lidx + 1]
-			age[lidx] = age[lidx + 1]
+			smallest_values[lidx] = smallest_values.unsafe_fetch(lidx + 1)
+			age[lidx] = ageunsafe_fetch(lidx + 1)
   			j += 1
 		  end		  
           age[offset + 15] = 101
