@@ -53,7 +53,8 @@ module WebrtcAudio
       smallest_values = inst.low_value_vector
       # Each value in |smallest_values| is getting 1 loop older. Update |age|, and
       # remove old values.
-      (0...16).each { |i|
+      i = 0
+	  while i < 16
         if (age[offset + i] != 100)
           age[offset + i] += 1
         else
@@ -61,14 +62,15 @@ module WebrtcAudio
 		  j = i
           while j < 16
 		    lidx = offset + j
-			smallest_values[lidx] = smallest_values[lidx + 1]? || 0_i16
-			age[lidx] = age[lidx + 1]? || 0_i16
+			smallest_values[lidx] = smallest_values[lidx + 1]
+			age[lidx] = age[lidx + 1]
 			j += 1
 		  end
           age[offset + 15] = 101
           smallest_values[offset + 15] = 10000
         end
-      }
+		i += 1
+      end
       # Check if |feature_value| is smaller than any of the values in
       # |smallest_values|. If so, find the |position| where to insert the new value
       # (|feature_value|).
