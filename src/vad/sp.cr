@@ -58,10 +58,17 @@ module WebrtcAudio
           age[offset + i] += 1
         else
           # Too old value. Remove from memory and shift larger values downwards.
-          (i...16).each { |j|
-            smallest_values[offset + j] = smallest_values[offset + j + 1]
-            age[offset + j] = age[offset + j + 1]
-          }
+		  j = i
+          while j < 16
+		    lidx = offset + j
+			if lidx + 1 < smallest_values.size
+				smallest_values[lidx] = smallest_values[lidx + 1]
+			end
+			if lidx + 1 < age.size	
+				age[lidx] = age[lidx + 1]
+			end	
+			j += 1
+		  end
           age[offset + 15] = 101
           smallest_values[offset + 15] = 10000
         end

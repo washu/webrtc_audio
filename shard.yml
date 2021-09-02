@@ -1,6 +1,6 @@
 name: webrtc_audio
 description: Pure crystal port of libvad
-version: 0.1.0
+version: 1.0.1
 
 authors:
   - Sal Scotto <sal.scotto@gmail.com>

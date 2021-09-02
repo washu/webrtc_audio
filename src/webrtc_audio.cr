@@ -1,6 +1,6 @@
 # TODO: Write documentation for `WebrtcAudio`
 module WebrtcAudio
-  VERSION               = "0.1.0"
+  VERSION               = "1.0.1"
   WEBRTC_SPL_WORD16_MAX = Int16::MAX
   WEBRTC_SPL_WORD16_MIN = Int16::MIN
   WEBRTC_SPL_WORD32_MAX = Int32::MAX

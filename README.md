@@ -18,13 +18,17 @@ This is a pure crystal port of libvad (https://github.com/dpirch/libfvad)
 
 ```crystal
 require "webrtc_audio"
+vad = WebrtcAudio::WebRtcVad.new
+vad.set_mode(WebrtcAudio::WebRtcVad::Aggressiveness::VeryAggress)
+vad.set_sample_rate(16000)
+has_voice = vad.process(input, input.size)_
 ```
 
-TODO: Write usage instructions here
+Be saure you pass the correct size values to the processor or it will return false.
 
 ## Development
 
-TODO: Write development instructions here
+check it out, crystal spec 
 
 ## Contributing
 
