@@ -57,15 +57,15 @@ module WebrtcAudio
 	  while i < 16
         if (age[offset + i] != 100)
           age[offset + i] += 1
-        else
+        else		  
           # Too old value. Remove from memory and shift larger values downwards.
 		  j = i
-          while j < 16
+          while j < 15
 		    lidx = offset + j
 			smallest_values[lidx] = smallest_values[lidx + 1]
 			age[lidx] = age[lidx + 1]
-			j += 1
-		  end
+  			j += 1
+		  end		  
           age[offset + 15] = 101
           smallest_values[offset + 15] = 10000
         end

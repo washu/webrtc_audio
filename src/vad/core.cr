@@ -595,7 +595,7 @@ module WebrtcAudio
       tmp_mem_slice = Slice(Int32).new(tmp_mem.to_unsafe, 480 + 256)
       kFrameLen10ms48khz = 480
       kFrameLen10ms8khz = 80
-      num_10ms_frames = frame_length / kFrameLen10ms48khz
+      num_10ms_frames = (frame_length / kFrameLen10ms48khz).to_i32
       (0...num_10ms_frames).each { |i|
         WebrtcAudio::SignalProcessing.resample_48khz_to_8khz(speech_frame, speech_nb_slice + (i * kFrameLen10ms8khz), inst.state_48_to_8, tmp_mem_slice)
       }
@@ -613,7 +613,7 @@ module WebrtcAudio
       t_state = [inst.downsampling_filter_states[2], inst.downsampling_filter_states[3]]
       # Downsample signal 32->16->8 before doing VAD
       self.downsampling(speech_frame, speechWB_slice, t_state, frame_length)
-      len = (frame_length / 2).round.to_i32
+      len = (frame_length / 2).to_i32
       inst.downsampling_filter_states[2] = t_state[0]
       inst.downsampling_filter_states[3] = t_state[1]
       self.downsampling(speechWB_slice, speechNB_slice, inst.downsampling_filter_states, len)
@@ -629,7 +629,7 @@ module WebrtcAudio
       speechNB_slice = Slice(Int16).new(speechNB.to_unsafe, 240)
       # Wideband: Downsample signal before doing VAD
       self.downsampling(speech_frame, speechNB_slice, inst.downsampling_filter_states, frame_length)
-      len = (frame_length / 2).round.to_i32
+      len = (frame_length / 2).to_i32
       vad = self.calc_vad_8khz(inst, speechNB_slice, len.to_i32)
       return vad.to_i32
     end
