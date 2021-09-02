@@ -61,12 +61,8 @@ module WebrtcAudio
 		  j = i
           while j < 16
 		    lidx = offset + j
-			if lidx + 1 < smallest_values.size
-				smallest_values[lidx] = smallest_values[lidx + 1]
-			end
-			if lidx + 1 < age.size	
-				age[lidx] = age[lidx + 1]
-			end	
+			smallest_values[lidx] = smallest_values[lidx + 1]? || 0_i16
+			age[lidx] = age[lidx + 1]? || 0_i16
 			j += 1
 		  end
           age[offset + 15] = 101
