@@ -18,7 +18,14 @@ module WebrtcAudio
       @instance = WebrtcAudio::VadInstance.new
       @idx = 0
     end
-
+	
+	def reset_state
+		old_mode = @instance.sample_mode
+		WebrtcAudio::Vad.init_core(@instance)
+		WebrtcAudio::Vad.set_mode_core(@instance, old_mode)
+		@idx = old_mode
+	end
+	
     def reset
       WebrtcAudio::Vad.init_core(@instance)
       @idx = 0

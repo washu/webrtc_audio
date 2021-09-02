@@ -551,6 +551,7 @@ module WebrtcAudio
     # Set aggressiveness mode
     def self.set_mode_core(inst : VadInstance, mode : Int32) : Int32
       return_value = 0_i32
+	  inst.sample_mode = mode
       case mode
       when 0
         # Quality mode.

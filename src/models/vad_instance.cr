@@ -29,5 +29,6 @@ module WebrtcAudio
     property individual : Array(Int16) = Array(Int16).new(3, 0)
     property total : Array(Int16) = Array(Int16).new(3, 0)
     property init_flag : Int32 = -1_i32
+	property sample_mode : Int32 = 0_i32
   end
 end
